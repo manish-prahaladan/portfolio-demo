@@ -8,22 +8,37 @@ const projects = [
 	{
 		index: '01',
 		status: 'Completed',
-		title: 'Your featured project',
+		title: 'Content moderation on Reddit',
 		description:
-			'Add the strongest project you have shipped, the problem it solved, and what made your approach distinctive.',
-		metric: '01',
-		metricLabel: 'finished build',
+			'Analyzed moderation behavior across 409 Reddit communities using a scalable pipeline covering 200,000+ posts and millions of comments, with survival and causal methods used to study post-removal patterns and engagement outcomes.',
+		metric: '409',
+		metricLabel: 'communities analyzed',
 		tone: 'light',
+		visual: 'reddit',
+		url: 'https://github.com/amokkapati/ContentModeration/tree/main/reddit',
 	},
 	{
 		index: '02',
-		status: 'In progress',
-		title: 'What you’re building next',
+		status: 'Completed',
+		title: 'BrainoCare',
 		description:
-			'Use this space for the work currently taking shape—an experiment, a research tool, or your next ambitious idea.',
-		metric: '∞',
-		metricLabel: 'room to explore',
+			'Developed a Flask-based brain tumor detection system using a custom convolutional neural network trained on 3,064 MRI scans. The model classified scans into three tumor categories and achieved approximately 97.5% test accuracy, with the web application providing an accessible interface for uploading images and viewing predictions.',
+		metric: '97.5%',
+		metricLabel: 'test accuracy',
+		tone: 'light',
+		visual: 'brainocare',
+		url: 'https://github.com/manish-prahaladan/BrainoCare',
+	},
+	{
+		index: '03',
+		status: 'In progress',
+		title: 'To be updated soon',
+		description: null,
+		metric: null,
+		metricLabel: null,
 		tone: 'dark',
+		visual: 'abstract',
+		url: null,
 	},
 ];
 
@@ -33,6 +48,11 @@ const journeyMilestones = [
 		type: 'Education',
 		title: 'Sri Krishna College of Engineering and Technology',
 		location: 'Coimbatore, India',
+		highlights: [
+			'CGPA: 8.79/10',
+			'Hack from Home 2021: My team won for the “Best Health/COVID Track.”',
+			'HackClub Member',
+		],
 		side: 'left',
 		tone: 'violet',
 		start: '0rem',
@@ -43,21 +63,42 @@ const journeyMilestones = [
 		type: 'Internship',
 		title: 'Amazon',
 		location: 'Bengaluru, India',
+		role: 'SDE Intern in Alexa International Organization',
+		description:
+			'Developed a full-stack scheduling system for an internal Amazon QA automation platform, supporting approximately 50,000 test jobs and reducing manual setup time by 15–20 minutes per job using Java, AWS, React, and TypeScript.',
+		brand: 'amazon',
 		side: 'right',
 		tone: 'amber',
 		start: '34rem',
-		length: '12rem',
+		length: '22rem',
 	},
 	{
 		period: 'Aug 2025 — Jun 2027',
 		type: 'Education',
 		title: 'University of California, Santa Cruz',
 		location: 'Santa Cruz, California',
+		courses: [
+			'Analysis of Algorithms',
+			'Network Security',
+			'Programming Languages',
+			'Artificial Intelligence',
+			'Probability and Statistics',
+			'Machine Learning',
+		],
+		highlights: ["Group Tutor for CSE 143 — Spring '26"],
 		side: 'left',
 		tone: 'blue',
-		start: '55rem',
+		start: '82rem',
 		length: '24rem',
 	},
+];
+
+const personalNotes = [
+	'I like football, and I support Real Madrid.',
+	'I used to follow F1 regularly, but I still watch a race from time to time.',
+	'I like reading books, and I love writing stories—they can be pretty nonsensical, lol.',
+	'I have been playing the guitar, and I am quite satisfied with my progress so far.',
+	'I love tasting different cuisines, traveling, and just talking philosophy.',
 ];
 ---
 
@@ -122,12 +163,16 @@ const journeyMilestones = [
 								imaging, and cognition evolve together over time.
 							</p>
 						</div>
-						<div class="fact-card reveal">
-							<span class="fact-label">Research focus</span>
-							<strong>ML × Neuroscience</strong>
-							<span>Clinical health data</span>
-							<div class="fact-orbit" aria-hidden="true"><span></span></div>
-						</div>
+						<figure class="research-visual reveal">
+							<img
+								src="/research-brain.jpg"
+								alt="A luminous blue and violet brain traced with neural connections"
+								width="1254"
+								height="1254"
+								loading="lazy"
+								decoding="async"
+							/>
+						</figure>
 					</div>
 				</div>
 			</section>
@@ -140,18 +185,54 @@ const journeyMilestones = [
 				<div class="project-stack">
 					{projects.map((project) => (
 						<article class:list={['project-panel', `project-${project.tone}`]}>
-							<div class="project-art reveal" aria-hidden="true">
+							<div
+								class:list={[
+									'project-art',
+									'reveal',
+									{
+										'project-art-reddit': project.visual === 'reddit',
+										'project-art-brainocare': project.visual === 'brainocare',
+									},
+								]}
+							>
 								<span class="project-index">{project.index}</span>
-								<div class="project-shape"></div>
+								{project.visual === 'reddit' ? (
+									<img
+										src="/reddit-project.jpg"
+										alt="Reddit mascot Snoo waving on an orange background"
+										width="1983"
+										height="793"
+										loading="lazy"
+										decoding="async"
+									/>
+								) : project.visual === 'brainocare' ? (
+									<img
+										src="/brainocare-project.jpg"
+										alt="BrainoCare in charcoal lettering on a warm orange background"
+										width="1659"
+										height="948"
+										loading="lazy"
+										decoding="async"
+									/>
+								) : (
+									<div class="project-shape"></div>
+								)}
 							</div>
 							<div class="project-copy reveal">
 								<p class="project-status"><span></span>{project.status}</p>
 								<h3>{project.title}</h3>
-								<p>{project.description}</p>
-								<div class="project-metric">
-									<strong>{project.metric}</strong>
-									<span>{project.metricLabel}</span>
-								</div>
+								{project.description && <p>{project.description}</p>}
+								{project.url && (
+									<a class="project-link" href={project.url} target="_blank" rel="noopener noreferrer">
+										View on GitHub <span aria-hidden="true">↗</span>
+									</a>
+								)}
+								{project.metric && (
+									<div class="project-metric">
+										<strong>{project.metric}</strong>
+										<span>{project.metricLabel}</span>
+									</div>
+								)}
 							</div>
 						</article>
 					))}
@@ -174,11 +255,32 @@ const journeyMilestones = [
 								<span class="timeline-node timeline-node-start" aria-hidden="true"></span>
 								<span class="timeline-node timeline-node-end" aria-hidden="true"></span>
 								<div class="timeline-card">
+									{milestone.brand === 'amazon' && (
+										<svg class="timeline-amazon-mark" viewBox="0 0 320 130" aria-hidden="true">
+											<path d="M24 61c72 53 185 62 264 8" />
+											<path d="M258 53c17-2 30 1 38 8-2 15-8 27-18 37" />
+										</svg>
+									)}
 									<p class="timeline-period">{milestone.period}</p>
 									<div class="timeline-details">
 										<p class="timeline-type">{milestone.type}</p>
 										<h3>{milestone.title}</h3>
 										<p class="timeline-location">{milestone.location}</p>
+										{milestone.role && <p class="timeline-role">{milestone.role}</p>}
+										{milestone.description && <p class="timeline-description">{milestone.description}</p>}
+										{milestone.courses && (
+											<div class="timeline-courses">
+												<p>Courses taken</p>
+												<ul>
+													{milestone.courses.map((course) => <li>{course}</li>)}
+												</ul>
+											</div>
+										)}
+										{milestone.highlights && (
+											<ul class="timeline-highlights">
+												{milestone.highlights.map((highlight) => <li>{highlight}</li>)}
+											</ul>
+										)}
 									</div>
 								</div>
 							</article>
@@ -189,11 +291,18 @@ const journeyMilestones = [
 
 			<section class="research chapter transition-left" id="personal" aria-labelledby="personal-title">
 				<div class="chapter-inner">
-					<div class="section-heading research-heading reveal">
+					<div class="section-heading personal-heading reveal">
 						<p class="chapter-number">Chapter 04 · Personal life</p>
 						<h2 id="personal-title">Beyond the work.</h2>
-						<p>Details TBD.</p>
 					</div>
+					<ul class="personal-list">
+						{personalNotes.map((note, index) => (
+							<li class="personal-item reveal">
+								<span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+								<p>{note}</p>
+							</li>
+						))}
+					</ul>
 				</div>
 			</section>
 
@@ -208,7 +317,6 @@ const journeyMilestones = [
 						<div class="connect-card">
 							<span>Résumé</span>
 							<strong>Available on request</strong>
-							<small>Add your PDF when ready</small>
 						</div>
 						<div class="connect-card">
 							<span>Email</span>
@@ -689,61 +797,20 @@ const journeyMilestones = [
 		margin-top: 1.5rem;
 	}
 
-	.fact-card {
-		position: relative;
-		min-height: 24rem;
+	.research-visual {
+		aspect-ratio: 1;
+		margin: 0;
 		overflow: hidden;
 		border-radius: 2rem;
-		padding: 2rem;
-		background: linear-gradient(145deg, #1d1d1f, #09090b);
+		background: #050711;
 		box-shadow: 0 2rem 5rem rgba(0, 0, 0, 0.14);
-		color: white;
 	}
 
-	.fact-card > span,
-	.fact-card strong {
-		position: relative;
-		z-index: 1;
+	.research-visual img {
 		display: block;
-	}
-
-	.fact-label {
-		margin-bottom: 8rem;
-		color: #a1a1a6;
-		font-size: 0.75rem;
-		font-weight: 700;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-	}
-
-	.fact-card strong {
-		font-size: clamp(2rem, 3vw, 3rem);
-		letter-spacing: -0.045em;
-	}
-
-	.fact-card > span:last-of-type {
-		margin-top: 0.35rem;
-		color: #a1a1a6;
-	}
-
-	.fact-orbit,
-	.fact-orbit span {
-		position: absolute;
-		border: 1px solid rgba(255, 255, 255, 0.12);
-		border-radius: 50%;
-	}
-
-	.fact-orbit {
-		top: -10rem;
-		right: -10rem;
-		width: 24rem;
-		height: 24rem;
-	}
-
-	.fact-orbit span {
-		inset: 4rem;
-		background: radial-gradient(circle at 35% 35%, #766cff, #27306f 55%, #101014 75%);
-		box-shadow: 0 0 5rem rgba(111, 98, 255, 0.4);
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
 	}
 
 	.journey .section-heading h2 {
@@ -752,7 +819,7 @@ const journeyMilestones = [
 
 	.timeline {
 		position: relative;
-		height: 79rem;
+		height: 106rem;
 		margin-top: 6rem;
 	}
 
@@ -800,16 +867,37 @@ const journeyMilestones = [
 	}
 
 	.timeline-card {
+		position: relative;
 		display: flex;
 		height: 100%;
 		flex-direction: column;
 		justify-content: space-between;
+		overflow: hidden;
 		border: 1px solid color-mix(in srgb, var(--timeline-accent) 45%, transparent);
 		border-radius: 1.5rem;
 		padding: clamp(1.5rem, 3vw, 2.5rem);
 		background: linear-gradient(145deg, var(--timeline-tint), rgba(255, 255, 255, 0.025));
 		box-shadow: inset 0 1px rgba(255, 255, 255, 0.05), 0 1.5rem 4rem rgba(0, 0, 0, 0.16);
 		backdrop-filter: blur(16px);
+	}
+
+	.timeline-period,
+	.timeline-details {
+		position: relative;
+		z-index: 1;
+	}
+
+	.timeline-amazon-mark {
+		position: absolute;
+		right: -1.5rem;
+		bottom: 0.4rem;
+		width: 92%;
+		fill: none;
+		stroke: var(--timeline-accent);
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		stroke-width: 11;
+		opacity: 0.12;
 	}
 
 	.timeline-item::before,
@@ -898,10 +986,118 @@ const journeyMilestones = [
 		font-size: 1.05rem;
 	}
 
+	.timeline-role {
+		margin: 1.1rem 0 0;
+		color: #f5f5f7;
+		font-size: 1.05rem;
+		font-weight: 700;
+		line-height: 1.35;
+	}
+
+	.timeline-description {
+		margin: 0.65rem 0 0;
+		color: #b6b6bb;
+		font-size: 0.9rem;
+		line-height: 1.5;
+	}
+
+	.timeline-courses {
+		margin-top: 1.25rem;
+	}
+
+	.timeline-courses > p {
+		margin: 0 0 0.65rem;
+		color: var(--timeline-accent);
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+	}
+
+	.timeline-courses ul {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.45rem 1.2rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.timeline-courses li {
+		color: #d2d2d7;
+		font-size: 0.8rem;
+		line-height: 1.35;
+	}
+
+	.timeline-highlights {
+		display: grid;
+		gap: 0.7rem;
+		margin: 1.5rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.timeline-highlights li {
+		position: relative;
+		padding-left: 1.1rem;
+		color: #d2d2d7;
+		font-size: 0.92rem;
+		line-height: 1.45;
+	}
+
+	.timeline-highlights li::before {
+		position: absolute;
+		top: 0.6em;
+		left: 0;
+		width: 0.35rem;
+		height: 0.35rem;
+		border-radius: 50%;
+		background: var(--timeline-accent);
+		content: '';
+	}
+
 	.research {
 		padding-top: 12rem;
 		padding-bottom: 12rem;
 		background: #f5f5f7;
+	}
+
+	.personal-heading {
+		max-width: 68rem;
+	}
+
+	.personal-list {
+		margin: 7rem 0 0;
+		border-top: 1px solid #d2d2d7;
+		padding: 0;
+		list-style: none;
+	}
+
+	.personal-item {
+		display: grid;
+		grid-template-columns: 5rem minmax(0, 1fr);
+		gap: 2rem;
+		align-items: start;
+		border-bottom: 1px solid #d2d2d7;
+		padding: clamp(2rem, 4vw, 3.5rem) 0;
+	}
+
+	.personal-item > span {
+		padding-top: 0.35rem;
+		color: #86868b;
+		font-size: 0.78rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+	}
+
+	.personal-item p {
+		max-width: 62rem;
+		margin: 0;
+		color: #1d1d1f;
+		font-size: clamp(1.45rem, 2.6vw, 2.65rem);
+		font-weight: 600;
+		letter-spacing: -0.035em;
+		line-height: 1.15;
 	}
 
 	.research-heading {
@@ -999,6 +1195,29 @@ const journeyMilestones = [
 		background: radial-gradient(circle at 30% 25%, #a8d6ff, #6d70ea 42%, #26295b 70%, #15151a);
 	}
 
+	.project-art-reddit {
+		background: #ff4500;
+	}
+
+	.project-art-reddit img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		object-position: center;
+	}
+
+	.project-art-brainocare {
+		background: #f99a43;
+	}
+
+	.project-art-brainocare img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+	}
+
 	.project-dark .project-art {
 		background: radial-gradient(circle at 70% 20%, #ffbc7e, #bd4c8e 38%, #3b235e 66%, #121216);
 	}
@@ -1063,12 +1282,39 @@ const journeyMilestones = [
 		line-height: 0.95;
 	}
 
+	.project-dark .project-copy h3 {
+		font-size: clamp(2.25rem, 3.6vw, 4rem);
+		line-height: 1;
+	}
+
 	.project-copy > p:not(.project-status) {
 		max-width: 34rem;
 		margin: 0;
 		color: #6e6e73;
 		font-size: 1.1rem;
 		line-height: 1.55;
+	}
+
+	.project-link {
+		display: inline-flex;
+		align-items: center;
+		align-self: flex-start;
+		gap: 0.5rem;
+		margin-top: 1.75rem;
+		border-bottom: 1px solid currentColor;
+		padding-bottom: 0.25rem;
+		color: inherit;
+		font-size: 0.9rem;
+		font-weight: 700;
+		text-decoration: none;
+	}
+
+	.project-link span {
+		transition: transform 180ms ease;
+	}
+
+	.project-link:hover span {
+		transform: translate(0.18rem, -0.18rem);
 	}
 
 	.project-dark .project-copy > p:not(.project-status) {
@@ -1287,8 +1533,8 @@ const journeyMilestones = [
 			margin-top: 5rem;
 		}
 
-		.fact-card {
-			min-height: 22rem;
+		.research-visual {
+			width: min(100%, 36rem);
 		}
 
 		.research-heading p:last-child {
@@ -1322,6 +1568,19 @@ const journeyMilestones = [
 	}
 
 	@media (max-width: 640px) {
+		.timeline-courses ul {
+			grid-template-columns: 1fr;
+		}
+
+		.personal-list {
+			margin-top: 4rem;
+		}
+
+		.personal-item {
+			grid-template-columns: 2rem minmax(0, 1fr);
+			gap: 1rem;
+		}
+
 		.chapter-inner,
 		.hero-content {
 			width: min(100% - 2rem, 1240px);
