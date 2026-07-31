@@ -218,13 +218,14 @@ const personalNotes = [
 										decoding="async"
 									/>
 								) : project.visual === 'lit-rag' ? (
-									<div class="rag-network" aria-hidden="true">
-										<div class="rag-query">What does the literature say?</div>
-										<div class="rag-path"></div>
-										<div class="rag-source rag-source-one"><span>PMID</span> Semantic retrieval</div>
-										<div class="rag-source rag-source-two"><span>PMID</span> Grounded claims</div>
-										<div class="rag-source rag-source-three"><span>PMID</span> Citation validation</div>
-									</div>
+									<img
+										src="/comp-neur-rag-project.png"
+										alt="A luminous neural connectome flowing into a network of scientific literature and citation nodes"
+										width="1254"
+										height="1254"
+										loading="lazy"
+										decoding="async"
+									/>
 								) : (
 									<div class="project-shape"></div>
 								)}
@@ -1239,101 +1240,15 @@ const personalNotes = [
 	}
 
 	.project-art-lit-rag {
-		background:
-			radial-gradient(circle at 22% 18%, rgba(108, 99, 255, 0.56), transparent 32%),
-			radial-gradient(circle at 82% 76%, rgba(31, 183, 170, 0.32), transparent 36%),
-			#0a0b11;
+		background: #050a12;
 	}
 
-	.rag-network {
-		position: relative;
-		width: min(34rem, 78%);
-		height: 27rem;
-	}
-
-	.rag-query,
-	.rag-source {
-		position: absolute;
-		z-index: 1;
-		border: 1px solid rgba(255, 255, 255, 0.18);
-		background: rgba(15, 16, 25, 0.74);
-		color: white;
-		box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.24);
-		backdrop-filter: blur(18px);
-	}
-
-	.rag-query {
-		top: 0;
-		left: 50%;
-		width: min(24rem, 92%);
-		border-radius: 999px;
-		padding: 1.15rem 1.5rem;
-		font-size: 0.95rem;
-		text-align: center;
-		transform: translateX(-50%);
-	}
-
-	.rag-path {
-		position: absolute;
-		top: 4.3rem;
-		left: 50%;
-		width: 1px;
-		height: 14rem;
-		background: linear-gradient(#8680ff, rgba(72, 213, 193, 0.55));
-		box-shadow: 0 0 1rem rgba(134, 128, 255, 0.8);
-	}
-
-	.rag-path::before,
-	.rag-path::after {
-		position: absolute;
-		top: 8rem;
-		width: 10rem;
-		height: 1px;
-		background: rgba(91, 216, 199, 0.54);
-		content: '';
-	}
-
-	.rag-path::before {
-		right: 0;
-		transform: rotate(-25deg);
-		transform-origin: right;
-	}
-
-	.rag-path::after {
-		left: 0;
-		transform: rotate(25deg);
-		transform-origin: left;
-	}
-
-	.rag-source {
-		bottom: 0;
-		width: 30%;
-		min-height: 8.5rem;
-		border-radius: 1.25rem;
-		padding: 1.25rem;
-		font-size: 0.85rem;
-		line-height: 1.3;
-	}
-
-	.rag-source span {
+	.project-art-lit-rag img {
 		display: block;
-		margin-bottom: 1.25rem;
-		color: #72ddce;
-		font-size: 0.65rem;
-		font-weight: 700;
-		letter-spacing: 0.14em;
-	}
-
-	.rag-source-one {
-		left: 0;
-	}
-
-	.rag-source-two {
-		left: 35%;
-	}
-
-	.rag-source-three {
-		right: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		object-position: center;
 	}
 
 	.project-dark .project-art {
