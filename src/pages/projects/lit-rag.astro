@@ -3,9 +3,9 @@ import BaseHead from '../../components/BaseHead.astro';
 import Footer from '../../components/Footer.astro';
 import Header from '../../components/Header.astro';
 
-const title = 'Literature RAG — Manish';
+const title = 'Computational Neuroscience RAG — Manish';
 const description =
-	'A citation-grounded biomedical literature assistant using semantic retrieval, pgvector, and validated PMID citations.';
+	"This retrieval-augmented Q&A system uses a focused PubMed corpus covering computational models of Parkinson's disease, epilepsy, and Alzheimer's disease. Each answer consists of claims tied to specific sources, with every citation checked against the retrieved records instead of accepted directly from the model. A multi-agent extension breaks complex questions into focused sub-questions, retrieves evidence for each one independently, and compares findings to surface meaningful disagreements and recurring conclusions across sources. Two custom evaluation harnesses assess grounding and synthesis quality. The project also documents a migration from Gemini to Groq prompted by production constraints, including the implementation issues uncovered and resolved during development.";
 ---
 
 <!doctype html>
@@ -20,11 +20,10 @@ const description =
 				<div class="hero-grid">
 					<div class="hero-copy">
 						<a class="back-link" href="/#projects"><span aria-hidden="true">←</span> Selected projects</a>
-						<p class="eyebrow">Biomedical retrieval · Project 03</p>
-						<h1 id="page-title">Literature<br /><span>RAG.</span></h1>
+						<p class="eyebrow">Computational neuroscience · Project 01</p>
+						<h1 id="page-title">Computational<br /><span>Neuroscience</span><br />RAG.</h1>
 						<p class="hero-description">{description}</p>
 						<div class="hero-actions">
-							<a href="#application">Launch application <span aria-hidden="true">↓</span></a>
 							<a
 								href="https://github.com/manish-prahaladan/lit_rag"
 								target="_blank"
@@ -35,23 +34,29 @@ const description =
 						</div>
 					</div>
 
-					<div class="system-map" aria-label="Literature RAG processing stages">
+					<div class="system-map" aria-label="Computational Neuroscience RAG processing stages">
 						<div class="map-glow"></div>
 						<div class="map-step map-query">
 							<span>01</span>
 							<strong>Question</strong>
 						</div>
 						<div class="map-line"></div>
-						<div class="map-step map-retrieve">
+						<div class="map-step">
 							<span>02</span>
-							<strong>Semantic retrieval</strong>
-							<small>MiniLM · pgvector</small>
+							<strong>Research plan</strong>
+							<small>2–4 focused sub-questions</small>
 						</div>
 						<div class="map-line"></div>
-						<div class="map-step map-answer">
+						<div class="map-step">
 							<span>03</span>
-							<strong>Grounded claims</strong>
-							<small>Validated PMIDs</small>
+							<strong>Retrieve and answer</strong>
+							<small>MiniLM · pgvector · Groq</small>
+						</div>
+						<div class="map-line"></div>
+						<div class="map-step">
+							<span>04</span>
+							<strong>Cross-source synthesis</strong>
+							<small>Validated tensions and convergence</small>
 						</div>
 					</div>
 				</div>
@@ -64,8 +69,11 @@ const description =
 						<h2 id="application-title">Ask the literature.</h2>
 					</div>
 					<p>
-						Answers are generated only from retrieved abstracts. Every citation is checked
-						against the retrieved PMID set before it reaches this page.
+						Ask about computational models of Parkinson's, epilepsy, or Alzheimer's disease.
+						Answers use only the scoped PubMed corpus, and every PMID is checked against what
+						was actually retrieved. This live demo uses the fast single-question path; the
+						repository also documents the multi-agent pipeline, both eval harnesses, and the
+						Gemini-to-Groq migration.
 					</p>
 				</div>
 
@@ -90,6 +98,7 @@ const description =
 							<button id="submit-question" type="submit">
 								<span class="button-label">Search and answer</span>
 								<span class="button-arrow" aria-hidden="true">→</span>
+								<span class="button-spinner" aria-hidden="true"></span>
 							</button>
 						</div>
 					</form>
@@ -123,43 +132,13 @@ const description =
 				</div>
 
 				<div id="request-status" class="request-status" role="status" aria-live="polite"></div>
-				<section id="answer" class="answer" aria-label="Literature RAG answer" hidden>
+				<section id="answer" class="answer" aria-label="Computational Neuroscience RAG answer" hidden>
 					<div id="answer-summary" class="answer-summary"></div>
 					<div id="claims" class="claims"></div>
 					<div id="sources" class="sources"></div>
 				</section>
 			</section>
 
-			<section class="architecture" aria-labelledby="architecture-title">
-				<p class="eyebrow">Under the hood</p>
-				<h2 id="architecture-title">Grounding is a constraint,<br />not a suggestion.</h2>
-				<div class="architecture-grid">
-					<article>
-						<span>01</span>
-						<h3>Retrieve</h3>
-						<p>
-							The question is embedded with MiniLM and compared against article vectors in
-							PostgreSQL using pgvector cosine distance.
-						</p>
-					</article>
-					<article>
-						<span>02</span>
-						<h3>Generate</h3>
-						<p>
-							The language model receives only the nearest article abstracts and returns
-							structured claims with their cited PMIDs.
-						</p>
-					</article>
-					<article>
-						<span>03</span>
-						<h3>Validate</h3>
-						<p>
-							Cited PMIDs are compared with the retrieved set. Any citation outside that set is
-							explicitly marked as unverified.
-						</p>
-					</article>
-				</div>
-			</section>
 		</main>
 		<Footer />
 
@@ -199,6 +178,13 @@ const description =
 				if (!submitButton || !statusElement) return;
 				submitButton.disabled = loading;
 				submitButton.classList.toggle('is-loading', loading);
+				submitButton.setAttribute('aria-busy', String(loading));
+				submitButton.setAttribute(
+					'aria-label',
+					loading ? 'Searching the literature' : 'Search and answer',
+				);
+				if (questionInput) questionInput.disabled = loading;
+				if (sourceCount) sourceCount.disabled = loading;
 				if (loading) {
 					statusElement.classList.remove('is-error');
 					statusElement.textContent = 'Retrieving articles and validating citations…';
@@ -313,7 +299,9 @@ const description =
 
 					if (!response.ok) {
 						const message =
-							typeof result.detail === 'string'
+							response.status === 429
+								? "The language model's rate limit has been reached. Please wait a moment and try again."
+								: typeof result.detail === 'string'
 								? result.detail
 								: 'The request could not be completed.';
 						throw new Error(message);
@@ -325,10 +313,11 @@ const description =
 					statusElement.textContent =
 						error instanceof Error
 							? error.message
-							: 'The Literature RAG service is temporarily unavailable.';
+							: 'The Computational Neuroscience RAG service is temporarily unavailable.';
 					statusElement.classList.add('is-error');
 				} finally {
 					setLoading(false);
+					questionInput?.focus();
 				}
 			});
 		</script>
@@ -363,8 +352,7 @@ const description =
 	}
 
 	.project-hero,
-	.application,
-	.architecture {
+	.application {
 		padding-right: max(1.5rem, calc((100vw - 1240px) / 2));
 		padding-left: max(1.5rem, calc((100vw - 1240px) / 2));
 	}
@@ -402,9 +390,9 @@ const description =
 	.hero-copy h1 {
 		margin: 1.5rem 0 2rem;
 		color: white;
-		font-size: clamp(5rem, 10vw, 9rem);
+		font-size: clamp(4rem, 7vw, 7rem);
 		letter-spacing: -0.075em;
-		line-height: 0.78;
+		line-height: 0.84;
 	}
 
 	.hero-copy h1 span {
@@ -417,6 +405,7 @@ const description =
 		color: #b2b2b8;
 		font-size: clamp(1.2rem, 2vw, 1.55rem);
 		line-height: 1.5;
+		text-align: justify;
 	}
 
 	.hero-actions {
@@ -498,8 +487,7 @@ const description =
 		align-items: end;
 	}
 
-	.application h2,
-	.architecture h2 {
+	.application h2 {
 		margin: 1.25rem 0 0;
 		font-size: clamp(3.5rem, 7vw, 7rem);
 		letter-spacing: -0.065em;
@@ -597,7 +585,9 @@ const description =
 	#submit-question {
 		display: inline-flex;
 		align-items: center;
+		justify-content: center;
 		gap: 1rem;
+		min-width: 12rem;
 		border: 0;
 		border-radius: 999px;
 		padding: 0.95rem 1.35rem;
@@ -614,8 +604,23 @@ const description =
 		opacity: 0.55;
 	}
 
+	.button-spinner {
+		display: none;
+		width: 1.15rem;
+		height: 1.15rem;
+		border: 2px solid rgba(255, 255, 255, 0.35);
+		border-top-color: white;
+		border-radius: 50%;
+		animation: spin 700ms linear infinite;
+	}
+
+	.is-loading .button-label,
 	.is-loading .button-arrow {
-		animation: pulse 900ms ease-in-out infinite alternate;
+		display: none;
+	}
+
+	.is-loading .button-spinner {
+		display: block;
 	}
 
 	.examples {
@@ -761,52 +766,8 @@ const description =
 		line-height: 1.65;
 	}
 
-	.architecture {
-		padding-top: 10rem;
-		padding-bottom: 12rem;
-	}
-
-	.architecture h2 {
-		max-width: 68rem;
-		color: white;
-	}
-
-	.architecture-grid {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 1px;
-		margin-top: 6rem;
-		background: #292a31;
-	}
-
-	.architecture article {
-		min-height: 24rem;
-		padding: clamp(2rem, 4vw, 3.5rem);
-		background: #101116;
-	}
-
-	.architecture article > span {
-		color: #7fe1d4;
-		font-size: 0.72rem;
-		font-weight: 700;
-	}
-
-	.architecture h3 {
-		margin: 8rem 0 1rem;
-		color: white;
-		font-size: 2rem;
-	}
-
-	.architecture article p {
-		margin: 0;
-		color: #a1a1a6;
-		line-height: 1.6;
-	}
-
-	@keyframes pulse {
-		to {
-			transform: translateX(0.35rem);
-		}
+	@keyframes spin {
+		to { transform: rotate(360deg); }
 	}
 
 	@media (max-width: 900px) {
@@ -824,17 +785,6 @@ const description =
 			gap: 2rem;
 		}
 
-		.architecture-grid {
-			grid-template-columns: 1fr;
-		}
-
-		.architecture article {
-			min-height: 18rem;
-		}
-
-		.architecture h3 {
-			margin-top: 5rem;
-		}
 	}
 
 	@media (max-width: 600px) {
@@ -847,7 +797,7 @@ const description =
 		}
 
 		.hero-copy h1 {
-			font-size: clamp(4.4rem, 23vw, 6.5rem);
+			font-size: clamp(3.4rem, 17vw, 5rem);
 		}
 
 		.back-link {
@@ -858,8 +808,7 @@ const description =
 			display: none;
 		}
 
-		.application,
-		.architecture {
+		.application {
 			padding-top: 7rem;
 			padding-bottom: 7rem;
 		}
@@ -891,8 +840,8 @@ const description =
 			transition: none;
 		}
 
-		.is-loading .button-arrow {
-			animation: none;
+		.button-spinner {
+			animation-duration: 1400ms;
 		}
 	}
 </style>
