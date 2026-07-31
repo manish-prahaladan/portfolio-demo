@@ -1,0 +1,898 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+
+const title = 'Literature RAG — Manish';
+const description =
+	'A citation-grounded biomedical literature assistant using semantic retrieval, pgvector, and validated PMID citations.';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={title} description={description} />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<section class="project-hero" aria-labelledby="page-title">
+				<div class="hero-grid">
+					<div class="hero-copy">
+						<a class="back-link" href="/#projects"><span aria-hidden="true">←</span> Selected projects</a>
+						<p class="eyebrow">Biomedical retrieval · Project 03</p>
+						<h1 id="page-title">Literature<br /><span>RAG.</span></h1>
+						<p class="hero-description">{description}</p>
+						<div class="hero-actions">
+							<a href="#application">Launch application <span aria-hidden="true">↓</span></a>
+							<a
+								href="https://github.com/manish-prahaladan/lit_rag"
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								GitHub <span aria-hidden="true">↗</span>
+							</a>
+						</div>
+					</div>
+
+					<div class="system-map" aria-label="Literature RAG processing stages">
+						<div class="map-glow"></div>
+						<div class="map-step map-query">
+							<span>01</span>
+							<strong>Question</strong>
+						</div>
+						<div class="map-line"></div>
+						<div class="map-step map-retrieve">
+							<span>02</span>
+							<strong>Semantic retrieval</strong>
+							<small>MiniLM · pgvector</small>
+						</div>
+						<div class="map-line"></div>
+						<div class="map-step map-answer">
+							<span>03</span>
+							<strong>Grounded claims</strong>
+							<small>Validated PMIDs</small>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section class="application" id="application" aria-labelledby="application-title">
+				<div class="application-intro">
+					<div>
+						<p class="eyebrow">Try the pipeline</p>
+						<h2 id="application-title">Ask the literature.</h2>
+					</div>
+					<p>
+						Answers are generated only from retrieved abstracts. Every citation is checked
+						against the retrieved PMID set before it reaches this page.
+					</p>
+				</div>
+
+				<div class="workspace">
+					<form id="question-form">
+						<label for="question">Your question</label>
+						<textarea
+							id="question"
+							name="question"
+							required
+							minlength="1"
+							maxlength="5000"
+							rows="5"
+							placeholder="What does the literature say about..."
+						></textarea>
+
+						<div class="form-footer">
+							<label class="source-count" for="source-count">
+								Sources
+								<input id="source-count" name="k" type="number" min="1" max="20" value="5" />
+							</label>
+							<button id="submit-question" type="submit">
+								<span class="button-label">Search and answer</span>
+								<span class="button-arrow" aria-hidden="true">→</span>
+							</button>
+						</div>
+					</form>
+
+					<div class="examples">
+						<p>Example questions</p>
+						<div>
+							<button
+								class="prompt-example"
+								type="button"
+								data-question="Does deep brain stimulation reduce tremor in Parkinson's disease, and by what mechanism?"
+							>
+								Deep brain stimulation and tremor
+							</button>
+							<button
+								class="prompt-example"
+								type="button"
+								data-question="What role do basal ganglia oscillations play in Parkinsonian bradykinesia?"
+							>
+								Basal ganglia oscillations
+							</button>
+							<button
+								class="prompt-example"
+								type="button"
+								data-question="What computational models have been used to explain seizure onset dynamics in epilepsy?"
+							>
+								Models of seizure onset
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<div id="request-status" class="request-status" role="status" aria-live="polite"></div>
+				<section id="answer" class="answer" aria-label="Literature RAG answer" hidden>
+					<div id="answer-summary" class="answer-summary"></div>
+					<div id="claims" class="claims"></div>
+					<div id="sources" class="sources"></div>
+				</section>
+			</section>
+
+			<section class="architecture" aria-labelledby="architecture-title">
+				<p class="eyebrow">Under the hood</p>
+				<h2 id="architecture-title">Grounding is a constraint,<br />not a suggestion.</h2>
+				<div class="architecture-grid">
+					<article>
+						<span>01</span>
+						<h3>Retrieve</h3>
+						<p>
+							The question is embedded with MiniLM and compared against article vectors in
+							PostgreSQL using pgvector cosine distance.
+						</p>
+					</article>
+					<article>
+						<span>02</span>
+						<h3>Generate</h3>
+						<p>
+							The language model receives only the nearest article abstracts and returns
+							structured claims with their cited PMIDs.
+						</p>
+					</article>
+					<article>
+						<span>03</span>
+						<h3>Validate</h3>
+						<p>
+							Cited PMIDs are compared with the retrieved set. Any citation outside that set is
+							explicitly marked as unverified.
+						</p>
+					</article>
+				</div>
+			</section>
+		</main>
+		<Footer />
+
+		<script>
+			interface Claim {
+				text: string;
+				pmids: string[];
+				unverified_pmids: string[];
+			}
+
+			interface Source {
+				pmid: string;
+				title: string;
+				abstract: string;
+				journal: string;
+				distance: number;
+			}
+
+			interface RagResult {
+				claims: Claim[];
+				insufficient_evidence: boolean;
+				sources: Source[];
+				detail?: string | unknown[];
+			}
+
+			const form = document.querySelector<HTMLFormElement>('#question-form');
+			const questionInput = document.querySelector<HTMLTextAreaElement>('#question');
+			const sourceCount = document.querySelector<HTMLInputElement>('#source-count');
+			const submitButton = document.querySelector<HTMLButtonElement>('#submit-question');
+			const statusElement = document.querySelector<HTMLElement>('#request-status');
+			const answerElement = document.querySelector<HTMLElement>('#answer');
+			const summaryElement = document.querySelector<HTMLElement>('#answer-summary');
+			const claimsElement = document.querySelector<HTMLElement>('#claims');
+			const sourcesElement = document.querySelector<HTMLElement>('#sources');
+
+			const setLoading = (loading: boolean) => {
+				if (!submitButton || !statusElement) return;
+				submitButton.disabled = loading;
+				submitButton.classList.toggle('is-loading', loading);
+				if (loading) {
+					statusElement.classList.remove('is-error');
+					statusElement.textContent = 'Retrieving articles and validating citations…';
+				}
+			};
+
+			const addCitation = (container: HTMLElement, pmid: string, unverified: boolean) => {
+				const link = document.createElement('a');
+				link.href = `https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(pmid)}/`;
+				link.target = '_blank';
+				link.rel = 'noopener noreferrer';
+				link.className = unverified ? 'citation citation-unverified' : 'citation';
+				link.textContent = `PMID ${pmid}`;
+				container.append(link);
+			};
+
+			const renderResult = (result: RagResult) => {
+				if (!answerElement || !summaryElement || !claimsElement || !sourcesElement) return;
+
+				summaryElement.replaceChildren();
+				claimsElement.replaceChildren();
+				sourcesElement.replaceChildren();
+
+				const summary = document.createElement('p');
+				summary.textContent = result.insufficient_evidence
+					? 'The retrieved sources do not provide enough evidence for a confident answer.'
+					: `${result.claims.length} grounded claim${result.claims.length === 1 ? '' : 's'} from ${result.sources.length} retrieved source${result.sources.length === 1 ? '' : 's'}.`;
+				summaryElement.className = result.insufficient_evidence
+					? 'answer-summary is-insufficient'
+					: 'answer-summary';
+				summaryElement.append(summary);
+
+				result.claims.forEach((claim, index) => {
+					const article = document.createElement('article');
+					article.className = 'claim';
+
+					const number = document.createElement('span');
+					number.className = 'claim-number';
+					number.textContent = String(index + 1).padStart(2, '0');
+
+					const content = document.createElement('div');
+					const text = document.createElement('p');
+					text.textContent = claim.text;
+					content.append(text);
+
+					const citations = document.createElement('div');
+					citations.className = 'citations';
+					claim.pmids.forEach((pmid) =>
+						addCitation(citations, pmid, claim.unverified_pmids.includes(pmid)),
+					);
+					if (!claim.pmids.length) {
+						const missing = document.createElement('span');
+						missing.className = 'citation citation-unverified';
+						missing.textContent = 'No PMID supplied';
+						citations.append(missing);
+					}
+					content.append(citations);
+					article.append(number, content);
+					claimsElement.append(article);
+				});
+
+				if (result.sources.length) {
+					const heading = document.createElement('h3');
+					heading.textContent = 'Retrieved sources';
+					sourcesElement.append(heading);
+				}
+
+				result.sources.forEach((source) => {
+					const details = document.createElement('details');
+					const summary = document.createElement('summary');
+					const sourceTitle = document.createElement('span');
+					const metadata = document.createElement('small');
+					const abstract = document.createElement('p');
+
+					sourceTitle.textContent = source.title;
+					metadata.textContent = `PMID ${source.pmid} · ${source.journal || 'Journal not listed'} · distance ${source.distance.toFixed(4)}`;
+					abstract.textContent = source.abstract;
+					summary.append(sourceTitle, metadata);
+					details.append(summary, abstract);
+					sourcesElement.append(details);
+				});
+
+				answerElement.hidden = false;
+				answerElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			};
+
+			document.querySelectorAll<HTMLButtonElement>('.prompt-example').forEach((button) => {
+				button.addEventListener('click', () => {
+					if (!questionInput) return;
+					questionInput.value = button.dataset.question ?? '';
+					questionInput.focus();
+				});
+			});
+
+			form?.addEventListener('submit', async (event) => {
+				event.preventDefault();
+				if (!questionInput || !sourceCount || !statusElement || !answerElement) return;
+
+				setLoading(true);
+				answerElement.hidden = true;
+
+				try {
+					const response = await fetch('/api/lit-rag', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							question: questionInput.value,
+							k: Number(sourceCount.value),
+						}),
+					});
+					const result = (await response.json()) as RagResult;
+
+					if (!response.ok) {
+						const message =
+							typeof result.detail === 'string'
+								? result.detail
+								: 'The request could not be completed.';
+						throw new Error(message);
+					}
+
+					statusElement.textContent = '';
+					renderResult(result);
+				} catch (error) {
+					statusElement.textContent =
+						error instanceof Error
+							? error.message
+							: 'The Literature RAG service is temporarily unavailable.';
+					statusElement.classList.add('is-error');
+				} finally {
+					setLoading(false);
+				}
+			});
+		</script>
+	</body>
+</html>
+
+<style>
+	:global(html) {
+		scroll-behavior: smooth;
+		background: #08090d;
+	}
+
+	:global(body) {
+		background: #08090d;
+		color: #f5f5f7;
+	}
+
+	main {
+		width: 100%;
+		max-width: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.eyebrow {
+		margin: 0;
+		color: #7fe1d4;
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+	}
+
+	.project-hero,
+	.application,
+	.architecture {
+		padding-right: max(1.5rem, calc((100vw - 1240px) / 2));
+		padding-left: max(1.5rem, calc((100vw - 1240px) / 2));
+	}
+
+	.project-hero {
+		display: grid;
+		min-height: 100svh;
+		align-items: center;
+		padding-top: 8rem;
+		padding-bottom: 6rem;
+		overflow: hidden;
+		background:
+			radial-gradient(circle at 76% 24%, rgba(99, 91, 255, 0.24), transparent 30%),
+			radial-gradient(circle at 67% 78%, rgba(54, 204, 184, 0.12), transparent 28%),
+			#08090d;
+	}
+
+	.hero-grid {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(25rem, 0.8fr);
+		gap: clamp(4rem, 9vw, 9rem);
+		align-items: center;
+	}
+
+	.back-link {
+		display: inline-flex;
+		gap: 0.5rem;
+		margin-bottom: 5rem;
+		color: #a1a1a6;
+		font-size: 0.85rem;
+		font-weight: 700;
+		text-decoration: none;
+	}
+
+	.hero-copy h1 {
+		margin: 1.5rem 0 2rem;
+		color: white;
+		font-size: clamp(5rem, 10vw, 9rem);
+		letter-spacing: -0.075em;
+		line-height: 0.78;
+	}
+
+	.hero-copy h1 span {
+		color: #7772ff;
+	}
+
+	.hero-description {
+		max-width: 42rem;
+		margin: 0;
+		color: #b2b2b8;
+		font-size: clamp(1.2rem, 2vw, 1.55rem);
+		line-height: 1.5;
+	}
+
+	.hero-actions {
+		display: flex;
+		gap: 2rem;
+		margin-top: 2.5rem;
+	}
+
+	.hero-actions a {
+		border-bottom: 1px solid currentColor;
+		padding-bottom: 0.3rem;
+		color: white;
+		font-size: 0.9rem;
+		font-weight: 700;
+		text-decoration: none;
+	}
+
+	.system-map {
+		position: relative;
+		display: grid;
+		justify-items: center;
+	}
+
+	.map-glow {
+		position: absolute;
+		inset: 15% 10%;
+		border-radius: 50%;
+		background: rgba(100, 92, 255, 0.16);
+		filter: blur(60px);
+	}
+
+	.map-step {
+		position: relative;
+		z-index: 1;
+		display: grid;
+		grid-template-columns: 2rem 1fr;
+		width: min(25rem, 100%);
+		border: 1px solid rgba(255, 255, 255, 0.14);
+		border-radius: 1.25rem;
+		padding: 1.5rem;
+		background: rgba(17, 18, 27, 0.78);
+		box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.25);
+		backdrop-filter: blur(18px);
+	}
+
+	.map-step span,
+	.map-step small {
+		color: #85858d;
+		font-size: 0.7rem;
+	}
+
+	.map-step strong {
+		font-size: 1.05rem;
+	}
+
+	.map-step small {
+		grid-column: 2;
+		margin-top: 0.3rem;
+	}
+
+	.map-line {
+		width: 1px;
+		height: 4rem;
+		background: linear-gradient(#746eff, #62d4c5);
+		box-shadow: 0 0 1rem rgba(116, 110, 255, 0.6);
+	}
+
+	.application {
+		padding-top: 9rem;
+		padding-bottom: 10rem;
+		background: #f5f5f7;
+		color: #1d1d1f;
+	}
+
+	.application-intro {
+		display: grid;
+		grid-template-columns: 1.1fr 0.9fr;
+		gap: 5rem;
+		align-items: end;
+	}
+
+	.application h2,
+	.architecture h2 {
+		margin: 1.25rem 0 0;
+		font-size: clamp(3.5rem, 7vw, 7rem);
+		letter-spacing: -0.065em;
+		line-height: 0.92;
+	}
+
+	.application-intro > p {
+		max-width: 34rem;
+		margin: 0;
+		color: #6e6e73;
+		font-size: 1.15rem;
+		line-height: 1.6;
+	}
+
+	.workspace {
+		display: grid;
+		grid-template-columns: minmax(0, 1.35fr) minmax(17rem, 0.65fr);
+		gap: 1px;
+		margin-top: 5rem;
+		overflow: hidden;
+		border: 1px solid #d2d2d7;
+		border-radius: 2rem;
+		background: #d2d2d7;
+		box-shadow: 0 2rem 6rem rgba(0, 0, 0, 0.08);
+	}
+
+	form,
+	.examples {
+		background: white;
+	}
+
+	form {
+		padding: clamp(2rem, 5vw, 4rem);
+	}
+
+	form > label,
+	.examples > p {
+		display: block;
+		margin: 0 0 1rem;
+		color: #6e6e73;
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.13em;
+		text-transform: uppercase;
+	}
+
+	textarea {
+		width: 100%;
+		resize: vertical;
+		border: 0;
+		outline: 0;
+		padding: 0;
+		background: transparent;
+		color: #1d1d1f;
+		font: inherit;
+		font-size: clamp(1.55rem, 3vw, 2.5rem);
+		font-weight: 600;
+		letter-spacing: -0.035em;
+		line-height: 1.25;
+	}
+
+	textarea::placeholder {
+		color: #c1c1c6;
+	}
+
+	.form-footer {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-top: 2rem;
+		border-top: 1px solid #e5e5e7;
+		padding-top: 1.5rem;
+	}
+
+	.source-count {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		color: #6e6e73;
+		font-size: 0.82rem;
+		font-weight: 700;
+	}
+
+	.source-count input {
+		width: 3.5rem;
+		border: 1px solid #d2d2d7;
+		border-radius: 0.6rem;
+		padding: 0.5rem;
+		background: #fafafa;
+		font: inherit;
+		text-align: center;
+	}
+
+	#submit-question {
+		display: inline-flex;
+		align-items: center;
+		gap: 1rem;
+		border: 0;
+		border-radius: 999px;
+		padding: 0.95rem 1.35rem;
+		background: #1d1d1f;
+		color: white;
+		font: inherit;
+		font-size: 0.86rem;
+		font-weight: 700;
+		cursor: pointer;
+	}
+
+	#submit-question:disabled {
+		cursor: wait;
+		opacity: 0.55;
+	}
+
+	.is-loading .button-arrow {
+		animation: pulse 900ms ease-in-out infinite alternate;
+	}
+
+	.examples {
+		padding: clamp(2rem, 4vw, 3rem);
+	}
+
+	.examples > div {
+		display: grid;
+		gap: 0.75rem;
+	}
+
+	.prompt-example {
+		border: 1px solid #e5e5e7;
+		border-radius: 1rem;
+		padding: 1rem;
+		background: #fafafa;
+		color: #3a3a3c;
+		font: inherit;
+		font-size: 0.9rem;
+		line-height: 1.35;
+		text-align: left;
+		cursor: pointer;
+		transition: border-color 160ms ease, transform 160ms ease;
+	}
+
+	.prompt-example:hover {
+		border-color: #7772ff;
+		transform: translateY(-2px);
+	}
+
+	.request-status {
+		min-height: 1.5rem;
+		margin-top: 1.5rem;
+		color: #6e6e73;
+		font-size: 0.9rem;
+	}
+
+	.request-status.is-error {
+		color: #b42318;
+	}
+
+	.answer {
+		margin-top: 4rem;
+		scroll-margin-top: 5rem;
+	}
+
+	.answer-summary {
+		border-left: 3px solid #34aa99;
+		padding: 1rem 1.25rem;
+		background: rgba(52, 170, 153, 0.08);
+	}
+
+	.answer-summary.is-insufficient {
+		border-color: #e19434;
+		background: rgba(225, 148, 52, 0.1);
+	}
+
+	.answer-summary :global(p) {
+		margin: 0;
+		font-weight: 700;
+	}
+
+	:global(.claim) {
+		display: grid;
+		grid-template-columns: 3rem 1fr;
+		gap: 1rem;
+		padding: 2.25rem 0;
+		border-bottom: 1px solid #d2d2d7;
+	}
+
+	:global(.claim-number) {
+		color: #86868b;
+		font-size: 0.75rem;
+		font-weight: 700;
+	}
+
+	:global(.claim p) {
+		max-width: 62rem;
+		margin: 0;
+		font-size: clamp(1.25rem, 2.5vw, 1.8rem);
+		font-weight: 600;
+		line-height: 1.4;
+	}
+
+	:global(.citations) {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-top: 1.25rem;
+	}
+
+	:global(.citation) {
+		border-radius: 999px;
+		padding: 0.42rem 0.7rem;
+		background: #e9e8ff;
+		color: #4540b8;
+		font-size: 0.72rem;
+		font-weight: 700;
+		text-decoration: none;
+	}
+
+	:global(.citation-unverified) {
+		background: #fff0e5;
+		color: #a24313;
+	}
+
+	.sources {
+		margin-top: 4rem;
+	}
+
+	.sources :global(h3) {
+		margin-bottom: 1.5rem;
+		font-size: 1.5rem;
+	}
+
+	.sources :global(details) {
+		border-top: 1px solid #d2d2d7;
+	}
+
+	.sources :global(details:last-child) {
+		border-bottom: 1px solid #d2d2d7;
+	}
+
+	.sources :global(summary) {
+		display: grid;
+		gap: 0.35rem;
+		padding: 1.25rem 0;
+		font-weight: 700;
+		cursor: pointer;
+	}
+
+	.sources :global(summary small) {
+		color: #86868b;
+		font-size: 0.72rem;
+		font-weight: 400;
+	}
+
+	.sources :global(details > p) {
+		max-width: 70rem;
+		margin: 0;
+		padding: 0 0 1.5rem;
+		color: #6e6e73;
+		line-height: 1.65;
+	}
+
+	.architecture {
+		padding-top: 10rem;
+		padding-bottom: 12rem;
+	}
+
+	.architecture h2 {
+		max-width: 68rem;
+		color: white;
+	}
+
+	.architecture-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1px;
+		margin-top: 6rem;
+		background: #292a31;
+	}
+
+	.architecture article {
+		min-height: 24rem;
+		padding: clamp(2rem, 4vw, 3.5rem);
+		background: #101116;
+	}
+
+	.architecture article > span {
+		color: #7fe1d4;
+		font-size: 0.72rem;
+		font-weight: 700;
+	}
+
+	.architecture h3 {
+		margin: 8rem 0 1rem;
+		color: white;
+		font-size: 2rem;
+	}
+
+	.architecture article p {
+		margin: 0;
+		color: #a1a1a6;
+		line-height: 1.6;
+	}
+
+	@keyframes pulse {
+		to {
+			transform: translateX(0.35rem);
+		}
+	}
+
+	@media (max-width: 900px) {
+		.hero-grid,
+		.application-intro,
+		.workspace {
+			grid-template-columns: 1fr;
+		}
+
+		.system-map {
+			margin-top: 2rem;
+		}
+
+		.application-intro {
+			gap: 2rem;
+		}
+
+		.architecture-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.architecture article {
+			min-height: 18rem;
+		}
+
+		.architecture h3 {
+			margin-top: 5rem;
+		}
+	}
+
+	@media (max-width: 600px) {
+		.project-hero {
+			padding-top: 7rem;
+		}
+
+		.hero-grid {
+			gap: 3rem;
+		}
+
+		.hero-copy h1 {
+			font-size: clamp(4.4rem, 23vw, 6.5rem);
+		}
+
+		.back-link {
+			margin-bottom: 3rem;
+		}
+
+		.system-map {
+			display: none;
+		}
+
+		.application,
+		.architecture {
+			padding-top: 7rem;
+			padding-bottom: 7rem;
+		}
+
+		.workspace {
+			margin-top: 3rem;
+		}
+
+		.form-footer {
+			align-items: stretch;
+			flex-direction: column;
+		}
+
+		#submit-question {
+			justify-content: center;
+		}
+
+		:global(.claim) {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		:global(html) {
+			scroll-behavior: auto;
+		}
+
+		.prompt-example {
+			transition: none;
+		}
+
+		.is-loading .button-arrow {
+			animation: none;
+		}
+	}
+</style>

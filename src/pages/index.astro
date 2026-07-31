@@ -31,14 +31,16 @@ const projects = [
 	},
 	{
 		index: '03',
-		status: 'In progress',
-		title: 'To be updated soon',
-		description: null,
-		metric: null,
-		metricLabel: null,
+		status: 'Completed',
+		title: 'Literature RAG',
+		description:
+			'A citation-grounded biomedical literature assistant using semantic retrieval, pgvector, and validated PMID citations.',
+		metric: 'PMID',
+		metricLabel: 'citations validated',
 		tone: 'dark',
-		visual: 'abstract',
-		url: null,
+		visual: 'lit-rag',
+		url: 'https://github.com/manish-prahaladan/lit_rag',
+		appUrl: '/projects/lit-rag',
 	},
 ];
 
@@ -192,6 +194,7 @@ const personalNotes = [
 									{
 										'project-art-reddit': project.visual === 'reddit',
 										'project-art-brainocare': project.visual === 'brainocare',
+										'project-art-lit-rag': project.visual === 'lit-rag',
 									},
 								]}
 							>
@@ -214,6 +217,14 @@ const personalNotes = [
 										loading="lazy"
 										decoding="async"
 									/>
+								) : project.visual === 'lit-rag' ? (
+									<div class="rag-network" aria-hidden="true">
+										<div class="rag-query">What does the literature say?</div>
+										<div class="rag-path"></div>
+										<div class="rag-source rag-source-one"><span>PMID</span> Semantic retrieval</div>
+										<div class="rag-source rag-source-two"><span>PMID</span> Grounded claims</div>
+										<div class="rag-source rag-source-three"><span>PMID</span> Citation validation</div>
+									</div>
 								) : (
 									<div class="project-shape"></div>
 								)}
@@ -222,10 +233,19 @@ const personalNotes = [
 								<p class="project-status"><span></span>{project.status}</p>
 								<h3>{project.title}</h3>
 								{project.description && <p>{project.description}</p>}
-								{project.url && (
-									<a class="project-link" href={project.url} target="_blank" rel="noopener noreferrer">
-										View on GitHub <span aria-hidden="true">↗</span>
-									</a>
+								{(project.appUrl || project.url) && (
+									<div class="project-actions">
+										{project.appUrl && (
+											<a class="project-link" href={project.appUrl}>
+												Launch application <span aria-hidden="true">→</span>
+											</a>
+										)}
+										{project.url && (
+											<a class="project-link" href={project.url} target="_blank" rel="noopener noreferrer">
+												{project.appUrl ? 'GitHub' : 'View on GitHub'} <span aria-hidden="true">↗</span>
+											</a>
+										)}
+									</div>
 								)}
 								{project.metric && (
 									<div class="project-metric">
@@ -1218,8 +1238,113 @@ const personalNotes = [
 		object-fit: contain;
 	}
 
+	.project-art-lit-rag {
+		background:
+			radial-gradient(circle at 22% 18%, rgba(108, 99, 255, 0.56), transparent 32%),
+			radial-gradient(circle at 82% 76%, rgba(31, 183, 170, 0.32), transparent 36%),
+			#0a0b11;
+	}
+
+	.rag-network {
+		position: relative;
+		width: min(34rem, 78%);
+		height: 27rem;
+	}
+
+	.rag-query,
+	.rag-source {
+		position: absolute;
+		z-index: 1;
+		border: 1px solid rgba(255, 255, 255, 0.18);
+		background: rgba(15, 16, 25, 0.74);
+		color: white;
+		box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.24);
+		backdrop-filter: blur(18px);
+	}
+
+	.rag-query {
+		top: 0;
+		left: 50%;
+		width: min(24rem, 92%);
+		border-radius: 999px;
+		padding: 1.15rem 1.5rem;
+		font-size: 0.95rem;
+		text-align: center;
+		transform: translateX(-50%);
+	}
+
+	.rag-path {
+		position: absolute;
+		top: 4.3rem;
+		left: 50%;
+		width: 1px;
+		height: 14rem;
+		background: linear-gradient(#8680ff, rgba(72, 213, 193, 0.55));
+		box-shadow: 0 0 1rem rgba(134, 128, 255, 0.8);
+	}
+
+	.rag-path::before,
+	.rag-path::after {
+		position: absolute;
+		top: 8rem;
+		width: 10rem;
+		height: 1px;
+		background: rgba(91, 216, 199, 0.54);
+		content: '';
+	}
+
+	.rag-path::before {
+		right: 0;
+		transform: rotate(-25deg);
+		transform-origin: right;
+	}
+
+	.rag-path::after {
+		left: 0;
+		transform: rotate(25deg);
+		transform-origin: left;
+	}
+
+	.rag-source {
+		bottom: 0;
+		width: 30%;
+		min-height: 8.5rem;
+		border-radius: 1.25rem;
+		padding: 1.25rem;
+		font-size: 0.85rem;
+		line-height: 1.3;
+	}
+
+	.rag-source span {
+		display: block;
+		margin-bottom: 1.25rem;
+		color: #72ddce;
+		font-size: 0.65rem;
+		font-weight: 700;
+		letter-spacing: 0.14em;
+	}
+
+	.rag-source-one {
+		left: 0;
+	}
+
+	.rag-source-two {
+		left: 35%;
+	}
+
+	.rag-source-three {
+		right: 0;
+	}
+
 	.project-dark .project-art {
 		background: radial-gradient(circle at 70% 20%, #ffbc7e, #bd4c8e 38%, #3b235e 66%, #121216);
+	}
+
+	.project-dark .project-art-lit-rag {
+		background:
+			radial-gradient(circle at 22% 18%, rgba(108, 99, 255, 0.56), transparent 32%),
+			radial-gradient(circle at 82% 76%, rgba(31, 183, 170, 0.32), transparent 36%),
+			#0a0b11;
 	}
 
 	.project-index {
@@ -1300,13 +1425,19 @@ const personalNotes = [
 		align-items: center;
 		align-self: flex-start;
 		gap: 0.5rem;
-		margin-top: 1.75rem;
 		border-bottom: 1px solid currentColor;
 		padding-bottom: 0.25rem;
 		color: inherit;
 		font-size: 0.9rem;
 		font-weight: 700;
 		text-decoration: none;
+	}
+
+	.project-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1.5rem;
+		margin-top: 1.75rem;
 	}
 
 	.project-link span {
